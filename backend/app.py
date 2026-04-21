@@ -97,4 +97,4 @@ app.add_url_rule(
 if __name__ == '__main__':
     # 初始化文件映射
     init_existing_files_mapping()
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    app.run(debug=True, host='0.0.0.0', port=5050)

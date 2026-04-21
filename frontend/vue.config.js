@@ -5,10 +5,10 @@ const path = require('path')
 module.exports = defineConfig({
   lintOnSave: false,
   devServer: {
-    port: 8080,
+    port: 8082,
     proxy: {
       '/api': {
-        target: 'http://localhost:5000',
+        target: 'http://localhost:5050',
         changeOrigin: true,
         secure: false,
         pathRewrite: {
@@ -17,12 +17,12 @@ module.exports = defineConfig({
         logLevel: 'debug'  // 添加调试日志
       },
       '/file': {
-        target: 'http://localhost:5000',
+        target: 'http://localhost:5050',
         changeOrigin: true,
         secure: false
       },
       '/convert': {
-        target: 'http://localhost:5000',
+        target: 'http://localhost:5050',
         changeOrigin: true,
         secure: false
       }

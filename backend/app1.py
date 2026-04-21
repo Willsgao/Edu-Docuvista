@@ -65,7 +65,7 @@ app.register_blueprint(websocket_bp)
 
 
 # ----------- 全局 CORS -----------
-CORS(app, resources={r"/*": {"origins": ["http://localhost:8080", "http://127.0.0.1:8080"]}},
+CORS(app, resources={r"/*": {"origins": ["http://localhost:8082", "http://127.0.0.1:8082"]}},
      supports_credentials=True, allow_headers="*", methods=["*"])
 
 

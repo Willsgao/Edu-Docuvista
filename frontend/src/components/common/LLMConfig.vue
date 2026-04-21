@@ -171,7 +171,7 @@ const checkNetworkStatus = async () => {
 
     // 使用更简单的网络检查，避免API验证
     const controller = new AbortController()
-    const timeoutId = setTimeout(() => controller.abort(), 5000) // 5秒超时
+    const timeoutId = setTimeout(() => controller.abort(), 5050) // 5秒超时
 
     try {
       // 尝试连接，但不验证响应状态
