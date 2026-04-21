@@ -1,10 +1,20 @@
 {
-  "backend": {
-    "baseUrl": "http://localhost:5000",
-    "apiPrefix": "/api"
+  "servers": {
+    "backend": {
+      "host": "127.0.0.1",
+      "port": 5050,
+      "baseUrl": "http://127.0.0.1:5050"
+    },
+    "frontend": {
+      "host": "localhost",
+      "port": 8082,
+      "baseUrl": "http://localhost:8082"
+    }
   },
-  "frontend": {
-    "baseUrl": "http://localhost:8080"
+  "api": {
+    "prefix": "/api",
+    "staticPrefix": "/static",
+    "uploadPrefix": "/upload"
   },
   "features": {
     "enableWebSocket": true,
