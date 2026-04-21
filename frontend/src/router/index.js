@@ -2,6 +2,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import TwoColumnPage from '@/views/TwoColumnPage.vue'
 import ThreeColumnPage from '@/views/ThreeColumnPage.vue'
+import EssayScoringPage from '@/views/EssayScoringPage.vue'
 
 const routes = [
   {
@@ -13,6 +14,11 @@ const routes = [
     path: '/three-column',
     name: 'ThreeColumn',
     component: ThreeColumnPage
+  },
+  {
+    path: '/essay-scoring',
+    name: 'EssayScoring',
+    component: EssayScoringPage
   },
   {
     path: '/',

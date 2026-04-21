@@ -80,6 +80,16 @@ app.add_url_rule(
     )
 )
 
+# 作文批改原型页面
+app.add_url_rule(
+    '/static/essay_scoring_demo.html',
+    'serve_essay_scoring_demo',
+    lambda: send_from_directory(
+        Path(MAIN_ROOT) / 'backend' / 'static',
+        'essay_scoring_demo.html'
+    )
+)
+
 # ----------- 移除 app.py 中的 CORS 配置 -----------
 # CORS 配置将在 backend_run.py 中统一处理
 

@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>智能英语作文批改系统 - 答辩展示版</title>
+    <style>
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        /* 16:9 画布 */
+        .slide-canvas {
+            width: 1920px;
+            height: 1080px;
+            background: #f8fafc;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25);
+            overflow: hidden;
+        }
+        /* 顶部导航 */
+        .top-bar {
+            height: 56px;
+            background: linear-gradient(90deg, #1e3a8a 0%, #3b82f6 100%);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 24px;
+            color: white;
+            flex-shrink: 0;
+        }
+        .top-bar h1 { font-size: 20px; font-weight: 600; }
+        .top-bar .subtitle { font-size: 13px; opacity: 0.9; margin-left: 12px; }
+        .steps { display: flex; gap: 8px; }
+        .step {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            background: rgba(255,255,255,0.15);
+            color: rgba(255,255,255,0.7);
+        }
+        .step.active { background: rgba(255,255,255,0.3); color: white; font-weight: 500; }
+
+        /* 主体内容区 - 三栏布局 */
+        .main-content {
+            flex: 1;
+            display: flex;
+            padding: 16px;
+            gap: 16px;
+            min-height: 0;
+        }
+        .column {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .col-left { width: 22%; }
+        .col-center { width: 46%; }
+        .col-right { width: 32%; }
+
+        /* 卡片样式 */
+        .card {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        .card-head {
+            padding: 10px 14px;
+            background: linear-gradient(90deg, #f1f5f9 0%, #e2e8f0 100%);
+            font-size: 13px;
+            font-weight: 600;
+            color: #334155;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-shrink: 0;
+        }
+        .card-body {
+            padding: 12px 14px;
+            flex: 1;
+            overflow: auto;
+        }
+
+        /* 作文输入 */
+        .essay-text {
+            font-size: 12px;
+            line-height: 1.7;
+            color: #374151;
+            white-space: pre-wrap;
+        }
+
+        /* 语法检测 */
+        .grammar-list { display: flex; flex-direction: column; gap: 6px; }
+        .grammar-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 10px;
+            background: #fef2f2;
+            border-radius: 6px;
+            border-left: 3px solid #ef4444;
+            font-size: 12px;
+        }
+        .grammar-num {
+            width: 18px; height: 18px;
+            background: #ef4444;
+            color: white;
+            border-radius: 50%;
+            font-size: 10px;
+            display: flex; align-items: center; justify-content: center;
+            flex-shrink: 0;
+        }
+        .grammar-type { color: #ef4444; font-weight: 500; flex-shrink: 0; }
+        .grammar-detail { color: #6b7280; font-size: 11px; }
+
+        /* 门控权重 - 核心区域 */
+        .gate-card { flex: 1; }
+        .gate-card .card-body {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            padding: 14px;
+        }
+        .expert-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 12px;
+            background: #f8fafc;
+            border-radius: 8px;
+        }
+        .expert-icon {
+            width: 36px; height: 36px;
+            border-radius: 8px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 16px;
+            flex-shrink: 0;
+        }
+        .expert-icon.g1 { background: #fee2e2; }
+        .expert-icon.g2 { background: #dbeafe; }
+        .expert-icon.g3 { background: #d1fae5; }
+        .expert-info { flex: 1; }
+        .expert-name { font-size: 13px; font-weight: 600; color: #1e293b; }
+        .expert-name span { font-size: 11px; color: #64748b; font-weight: 400; margin-left: 4px; }
+        .expert-bar-bg {
+            height: 10px;
+            background: #e2e8f0;
+            border-radius: 5px;
+            margin-top: 6px;
+            overflow: hidden;
+        }
+        .expert-bar-fill {
+            height: 100%;
+            border-radius: 5px;
+            transition: width 0.3s ease;
+        }
+        .bar-red { background: linear-gradient(90deg, #ef4444, #f87171); }
+        .bar-blue { background: linear-gradient(90deg, #3b82f6, #60a5fa); }
+        .bar-green { background: linear-gradient(90deg, #10b981, #34d399); }
+        .expert-weight {
+            font-size: 20px;
+            font-weight: 700;
+            color: #1e293b;
+            min-width: 50px;
+            text-align: right;
+        }
+
+        /* 权重分析区 */
+        .analysis-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+        .analysis-box {
+            padding: 10px;
+            border-radius: 8px;
+            font-size: 12px;
+        }
+        .analysis-box.highlight {
+            background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+            border: 1px solid #f59e0b;
+        }
+        .analysis-box.compare {
+            background: #f1f5f9;
+        }
+        .analysis-title { font-weight: 600; color: #1e293b; margin-bottom: 6px; font-size: 12px; }
+        .analysis-text { color: #475569; line-height: 1.5; font-size: 11px; }
+        .compare-table { width: 100%; font-size: 11px; }
+        .compare-table td { padding: 3px 0; color: #475569; }
+        .compare-table .label { color: #94a3b8; width: 50px; }
+
+        /* 可解释性说明 */
+        .explain-box {
+            background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+            border: 1px solid #10b981;
+            border-radius: 8px;
+            padding: 10px 12px;
+            font-size: 12px;
+            color: #065f46;
+        }
+        .explain-box strong { color: #047857; }
+
+        /* 多维评分 */
+        .score-card { flex: 1; }
+        .scale-switcher { display: flex; gap: 4px; }
+        .scale-btn {
+            padding: 3px 8px;
+            border: 1px solid #cbd5e1;
+            background: white;
+            border-radius: 4px;
+            font-size: 11px;
+            cursor: pointer;
+            color: #64748b;
+        }
+        .scale-btn.active {
+            background: #3b82f6;
+            color: white;
+            border-color: #3b82f6;
+        }
+        .score-grid { display: flex; flex-direction: column; gap: 8px; }
+        .score-item { display: flex; flex-direction: column; gap: 3px; }
+        .score-head {
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+        }
+        .score-lbl { color: #475569; }
+        .score-val { color: #1e293b; font-weight: 600; }
+        .score-bar-bg {
+            height: 8px;
+            background: #e2e8f0;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        .score-bar-fill { height: 100%; border-radius: 4px; }
+        .sb-blue { background: #3b82f6; }
+        .sb-orange { background: #f97316; }
+        .sb-purple { background: #8b5cf6; }
+        .sb-green { background: #10b981; }
+
+        .overall-box {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px solid #e2e8f0;
+        }
+        .overall-label { font-size: 13px; color: #64748b; }
+        .overall-grade {
+            font-size: 32px;
+            font-weight: 700;
+            color: #3b82f6;
+        }
+        .overall-detail { font-size: 13px; color: #64748b; }
+
+        /* 系统架构 */
+        .arch-flow {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            margin-bottom: 10px;
+        }
+        .arch-step {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 12px;
+        }
+        .arch-box {
+            padding: 6px 10px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 500;
+        }
+        .arch-in { background: #dbeafe; color: #1e40af; }
+        .arch-process { background: #fef3c7; color: #92400e; }
+        .arch-out { background: #d1fae5; color: #065f46; }
+        .arch-arrow { color: #94a3b8; font-size: 14px; }
+
+        .expert-pills {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+        .expert-pill {
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 500;
+        }
+        .pill-red { background: #fee2e2; color: #991b1b; }
+        .pill-blue { background: #dbeafe; color: #1e40af; }
+        .pill-green { background: #d1fae5; color: #065f46; }
+
+        /* 训练策略 */
+        .strategy-list { display: flex; flex-direction: column; gap: 6px; }
+        .strategy-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 8px;
+            padding: 8px;
+            background: #f8fafc;
+            border-radius: 6px;
+            font-size: 11px;
+        }
+        .strategy-tag {
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: 600;
+            flex-shrink: 0;
+        }
+        .tag-cpl { background: #fef3c7; color: #92400e; }
+        .tag-asl { background: #dbeafe; color: #1e40af; }
+        .tag-moe { background: #fce7f3; color: #9d174d; }
+        .strategy-text { color: #475569; line-height: 1.4; }
+
+        /* 底部 */
+        .footer-bar {
+            height: 36px;
+            background: #1e293b;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #94a3b8;
+            font-size: 12px;
+            flex-shrink: 0;
+        }
+    </style>
+</head>
+<body>
+
+<div class="slide-canvas">
+    <!-- 顶部导航 -->
+    <div class="top-bar">
+        <div>
+            <span style="font-size: 18px;">🎓</span>
+            <span style="font-weight: 600;">智能英语作文批改系统</span>
+            <span class="subtitle">MoE · CPL · ASL</span>
+        </div>
+        <div class="steps">
+            <span class="step">① 输入作文</span>
+            <span class="step">② 特征编码</span>
+            <span class="step active">③ 门控分配</span>
+            <span class="step">④ 专家评分</span>
+            <span class="step">⑤ 融合输出</span>
+        </div>
+    </div>
+
+    <!-- 主体内容：三栏布局 -->
+    <div class="main-content">
+        <!-- 左栏：作文 + 语法 -->
+        <div class="column col-left">
+            <!-- 作文输入 -->
+            <div class="card" style="flex: 1.2;">
+                <div class="card-head">📝 学生作文</div>
+                <div class="card-body">
+                    <div class="essay-text">Dear Paul,
+
+Learning that you are interested in Chinese paper cutting, I'd like to introduce it to you. Paper cutting is a traditional Chinese art with a long history. It is usually used to decorate houses during festivals, especially the Spring Festival.
+
+The process of making paper cutting is not very complex. First, you need to prepare red paper and scissors. Then, fold the paper and cut it into various patterns such as flowers, animals or Chinese characters. Finally, unfold the paper and you will see a beautiful work.
+
+I hope you can have a try and experience this amazing art. Looking forward to your reply.
+
+Yours,
+Li Hua</div>
+                </div>
+            </div>
+
+            <!-- 语法检测 -->
+            <div class="card" style="flex: 1;">
+                <div class="card-head">🔍 语法检测 <span style="color:#ef4444; font-size:12px;">7 处</span></div>
+                <div class="card-body">
+                    <div class="grammar-list">
+                        <div class="grammar-item">
+                            <div class="grammar-num">1</div>
+                            <span class="grammar-type">冠词</span>
+                            <span class="grammar-detail">"a amazing art" → "an amazing art"</span>
+                        </div>
+                        <div class="grammar-item">
+                            <div class="grammar-num">2</div>
+                            <span class="grammar-type">介词</span>
+                            <span class="grammar-detail">"interested of" → "interested in"</span>
+                        </div>
+                        <div class="grammar-item">
+                            <div class="grammar-num">3</div>
+                            <span class="grammar-type">拼写</span>
+                            <span class="grammar-detail">"traditonal" → "traditional"</span>
+                        </div>
+                        <div class="grammar-item">
+                            <div class="grammar-num">4</div>
+                            <span class="grammar-type">时态</span>
+                            <span class="grammar-detail">"I hope you can" → "I hope you will"</span>
+                        </div>
+                        <div class="grammar-item">
+                            <div class="grammar-num">5</div>
+                            <span class="grammar-type">标点</span>
+                            <span class="grammar-detail">"animals or" → "animals, or"</span>
+                        </div>
+                        <div class="grammar-item">
+                            <div class="grammar-num">6</div>
+                            <span class="grammar-type">大小写</span>
+                            <span class="grammar-detail">"spring Festival" → "Spring Festival"</span>
+                        </div>
+                        <div class="grammar-item">
+                            <div class="grammar-num">7</div>
+                            <span class="grammar-type">冗余</span>
+                            <span class="grammar-detail">"very complex" → "complex"</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 中栏：门控权重（核心）+ 分析 -->
+        <div class="column col-center">
+            <!-- 门控权重 - 核心展示 -->
+            <div class="card gate-card">
+                <div class="card-head">
+                    <span>🎛️ ASL 门控网络 — 专家权重分配</span>
+                    <span style="background:#ef4444; color:white; padding:2px 8px; border-radius:12px; font-size:11px;">核心创新</span>
+                </div>
+                <div class="card-body">
+                    <!-- 三个专家 -->
+                    <div class="expert-row">
+                        <div class="expert-icon g1">📝</div>
+                        <div class="expert-info">
+                            <div class="expert-name">语法专家 <span>Grammar Expert</span></div>
+                            <div class="expert-bar-bg">
+                                <div class="expert-bar-fill bar-red" style="width:62%"></div>
+                            </div>
+                        </div>
+                        <div class="expert-weight">0.62</div>
+                    </div>
+                    <div class="expert-row">
+                        <div class="expert-icon g2">💬</div>
+                        <div class="expert-info">
+                            <div class="expert-name">语义专家 <span>Semantic Expert</span></div>
+                            <div class="expert-bar-bg">
+                                <div class="expert-bar-fill bar-blue" style="width:33%"></div>
+                            </div>
+                        </div>
+                        <div class="expert-weight">0.33</div>
+                    </div>
+                    <div class="expert-row">
+                        <div class="expert-icon g3">🎯</div>
+                        <div class="expert-info">
+                            <div class="expert-name">语用专家 <span>Pragmatic Expert</span></div>
+                            <div class="expert-bar-bg">
+                                <div class="expert-bar-fill bar-green" style="width:5%"></div>
+                            </div>
+                        </div>
+                        <div class="expert-weight">0.05</div>
+                    </div>
+
+                    <!-- 分析区 -->
+                    <div class="analysis-grid">
+                        <div class="analysis-box highlight">
+                            <div class="analysis-title">📊 权重解读</div>
+                            <div class="analysis-text">本文存在 7 处语法错误，ASL 门控网络自动提升语法专家权重至 0.62，显著高于正常水平，模型已关注核心问题。</div>
+                        </div>
+                        <div class="analysis-box compare">
+                            <div class="analysis-title">📈 对比分析</div>
+                            <table class="compare-table">
+                                <tr><td class="label">本文:</td><td>语法 0.62 | 语义 0.33 | 语用 0.05</td></tr>
+                                <tr><td class="label">正常作文:</td><td>语法 0.25 | 语义 0.35 | 语用 0.40</td></tr>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- 可解释性 -->
+                    <div class="explain-box">
+                        <strong>💡 可解释性：</strong>门控权重直观展示评分依据，教师可据此理解模型决策，学生可针对性改进薄弱环节。
+                    </div>
+                </div>
+            </div>
+
+            <!-- 多维评分 -->
+            <div class="card" style="flex: 0.7;">
+                <div class="card-head">
+                    <span>📊 多维评分</span>
+                    <div class="scale-switcher">
+                        <button class="scale-btn active" onclick="switchScale(15)">15分</button>
+                        <button class="scale-btn" onclick="switchScale(25)">25分</button>
+                        <button class="scale-btn" onclick="switchScale(36)">36分</button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="score-grid">
+                        <div class="score-item">
+                            <div class="score-head">
+                                <span class="score-lbl">句子表达</span>
+                                <span class="score-val" id="sv1">3/4</span>
+                            </div>
+                            <div class="score-bar-bg"><div class="score-bar-fill sb-blue" id="sb1" style="width:75%"></div></div>
+                        </div>
+                        <div class="score-item">
+                            <div class="score-head">
+                                <span class="score-lbl">短语使用</span>
+                                <span class="score-val" id="sv2">3/4</span>
+                            </div>
+                            <div class="score-bar-bg"><div class="score-bar-fill sb-orange" id="sb2" style="width:75%"></div></div>
+                        </div>
+                        <div class="score-item">
+                            <div class="score-head">
+                                <span class="score-lbl">篇章结构</span>
+                                <span class="score-val" id="sv3">4/4</span>
+                            </div>
+                            <div class="score-bar-bg"><div class="score-bar-fill sb-purple" id="sb3" style="width:100%"></div></div>
+                        </div>
+                        <div class="score-item">
+                            <div class="score-head">
+                                <span class="score-lbl">内容质量</span>
+                                <span class="score-val" id="sv4">3/3</span>
+                            </div>
+                            <div class="score-bar-bg"><div class="score-bar-fill sb-green" id="sb4" style="width:100%"></div></div>
+                        </div>
+                    </div>
+                    <div class="overall-box">
+                        <div class="overall-label">综合</div>
+                        <div class="overall-grade" id="total-grade">B+</div>
+                        <div class="overall-detail" id="total-score">13 / 15</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 右栏：系统架构 -->
+        <div class="column col-right">
+            <!-- 系统架构 -->
+            <div class="card" style="flex: 1.1;">
+                <div class="card-head">💡 系统架构流程</div>
+                <div class="card-body">
+                    <div class="arch-flow">
+                        <div class="arch-step">
+                            <div class="arch-box arch-in">学生作文</div>
+                            <span class="arch-arrow">→</span>
+                            <div class="arch-box arch-process">BERT 编码器</div>
+                        </div>
+                        <div class="arch-step">
+                            <span class="arch-arrow" style="margin-left:20px;">↓</span>
+                        </div>
+                        <div class="arch-step">
+                            <div class="arch-box arch-process">ASL 门控网络</div>
+                            <span class="arch-arrow">→</span>
+                            <div class="arch-box arch-process">专家评分</div>
+                        </div>
+                        <div class="arch-step">
+                            <span class="arch-arrow" style="margin-left:20px;">↓</span>
+                        </div>
+                        <div class="arch-step">
+                            <div class="arch-box arch-out">融合输出</div>
+                        </div>
+                    </div>
+
+                    <div style="margin-top: 10px;">
+                        <div style="font-size: 12px; font-weight: 600; color: #334155; margin-bottom: 8px;">专家分工</div>
+                        <div class="expert-pills">
+                            <span class="expert-pill pill-red">📝 语法专家<br><small>句法结构检测</small></span>
+                            <span class="expert-pill pill-blue">💬 语义专家<br><small>语义连贯性评估</small></span>
+                            <span class="expert-pill pill-green">🎯 语用专家<br><small>语用得体性分析</small></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 训练策略 -->
+            <div class="card" style="flex: 1;">
+                <div class="card-head">🚀 训练策略</div>
+                <div class="card-body">
+                    <div class="strategy-list">
+                        <div class="strategy-item">
+                            <span class="strategy-tag tag-cpl">CPL</span>
+                            <span class="strategy-text">对比偏好学习 — 区分高低分作文特征差异</span>
+                        </div>
+                        <div class="strategy-item">
+                            <span class="strategy-tag tag-asl">ASL</span>
+                            <span class="strategy-text">自适应稀疏门控 — 自动分配专家权重</span>
+                        </div>
+                        <div class="strategy-item">
+                            <span class="strategy-tag tag-moe">MoE</span>
+                            <span class="strategy-text">混合专家网络 — 语法/语义/语用三专家协作</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 底部 -->
+    <div class="footer-bar">
+    </div>
+</div>
+
+<script>
+const baseScores = [
+    { name: '句子表达', score: 7, max: 9 },
+    { name: '短语使用', score: 6, max: 9 },
+    { name: '篇章结构', score: 8, max: 9 },
+    { name: '内容质量', score: 7, max: 9 }
+];
+
+const scaleMap = {
+    15: { dims: [4, 4, 4, 3], gradeThresholds: [0.87, 0.73, 0.60, 0.47] },
+    25: { dims: [7, 6, 6, 6], gradeThresholds: [0.88, 0.76, 0.64, 0.52] },
+    36: { dims: [9, 9, 9, 9], gradeThresholds: [0.86, 0.75, 0.64, 0.50] }
+};
+
+function switchScale(total) {
+    const map = scaleMap[total];
+    document.querySelectorAll('.scale-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.textContent.includes(total + ''));
+    });
+
+    let convertedTotal = 0;
+    baseScores.forEach((item, i) => {
+        const newMax = map.dims[i];
+        const newScore = Math.round(item.score / item.max * newMax);
+        const pct = Math.round(newScore / newMax * 100);
+        convertedTotal += newScore;
+
+        document.getElementById('sv' + (i + 1)).textContent = newScore + '/' + newMax;
+        document.getElementById('sb' + (i + 1)).style.width = pct + '%';
+    });
+
+    const ratio = convertedTotal / total;
+    const t = map.gradeThresholds;
+    let grade;
+    if (ratio >= t[0]) grade = 'A';
+    else if (ratio >= t[1]) grade = 'B+';
+    else if (ratio >= t[2]) grade = 'B';
+    else if (ratio >= t[3]) grade = 'C+';
+    else grade = 'C';
+
+    document.getElementById('total-grade').textContent = grade;
+    document.getElementById('total-score').textContent = convertedTotal + ' / ' + total;
+}
+
+switchScale(15);
+</script>
+
+</body>
+</html>
