@@ -11,14 +11,14 @@
             @click="$router.push('/two-column')"
             size="small"
           >
-            数据解析
+            两栏布局
           </el-button>
           <el-button
             :type="$route.name === 'ThreeColumn' ? 'primary' : ''"
             @click="$router.push('/three-column')"
             size="small"
           >
-            可视化
+            三栏布局
           </el-button>
           <el-button
             :type="$route.name === 'EssayScoring' ? 'primary' : ''"
